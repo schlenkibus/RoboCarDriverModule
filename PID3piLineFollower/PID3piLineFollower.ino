@@ -11,12 +11,12 @@ Pololu3pi robot;
 unsigned int sensors[5]; // an array to hold sensor values
 unsigned int last_proportional = 0;
 long integral = 0;
-bool isCalibrated = false;
+
 
 
 //Tuning Section
 const int maximum = 60; //Maxspeed
-auto timeToTurn = 400; //Zeit die für eine 90 Grad drehung benötigt wird
+auto timeToTurn = 290; //Zeit die für eine 90 Grad drehung benötigt wird
 //End of Tuning Section
 
 
@@ -38,7 +38,6 @@ void calibrateSensors() {
     delay(20);
   }
   OrangutanMotors::setSpeeds(0, 0);
-  isCalibrated = true;
 }
 
 
