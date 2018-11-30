@@ -6,12 +6,12 @@
 #include <OrangutanLCD.h>
 #include <OrangutanPushbuttons.h>
 #include <OrangutanBuzzer.h>
-#include <OrangutanSerial.h>
 
 Pololu3pi robot;
 unsigned int sensors[5]; // an array to hold sensor values
 unsigned int last_proportional = 0;
 long integral = 0;
+bool isCalibrated = false;
 
 
 //Tuning Section
@@ -37,59 +37,95 @@ void calibrateSensors() {
     // 80*20 = 1600 ms.
     delay(20);
   }
+
+  isCalibrated = true;
 }
+
 
 void setup()
 {
-  
   //Robo Init
   robot.init(2000);
   delay(10);
   OrangutanMotors::setSpeeds(0, 0);
   //End of Robo Init
 
-  //UART Init
-  char buffer;
-  serial_set_baud_rate(115200);
-  serial_set_mode(SERIAL_CHECK); // Don't use ISRs and background buffers
-  serial_receive(&buffer, 1); // Configure ring buffer to use for receiving
-  //end of UART Init
-  
+  Serial.begin(115200);
+
+  //Sensor Init
+  OrangutanLCD::clear();
+  OrangutanLCD::print("Press B for Calibration");
+  beep();
+  OrangutanPushbuttons::waitForPress(BUTTON_B);
+  OrangutanPushbuttons::waitForRelease(BUTTON_B);
+  delay(1000);
+  calibrateSensors();
+  //End of Init
 }
 
 enum Instruktionen {
-  F, S, L, R, T, B
+  F, S, L, R, T, B, E
 };
 
 char readUart(){
-  serial_check(); // Check if the UART hardware has received data and place it in the receive buffer
+  int b;
+  do {
+    b = Serial.read();
+  } while(b == -1);
+  
+  Serial.print(b);
+  return static_cast<char>(b);
+}
 
+void debugInstruction(char i) {
+  switch(i) {
+    case 'F':
+      beep();
+      delay(100);
+      beep();
+    break;
+  }
 }
 
 void loop()
 {
+  char instruction;
+  do {
+    instruction = readUart();
+    debugInstruction(instruction);
+    switch(instruction) {
+      case 'F':
+      goForward();
+      roboReady();
+      break;
+    case 'S':
+       goForwardPlusStop();
+      break;
+    case 'L':
+      turnLeft();
+      break;
+    case 'R':
+      turnRight();
+      break;
+    case 'B':
+      beep();
+      break;
+    case 'E':
+      ende();
+      break;
+    }
+  } while(instruction != 'E');
+
+  exit(0);
+  
   //Uart lesen und Instruktion ausführen
   auto i = readUart();
-  if (serial_get_received_bytes() > 0) {
+  //if (received_byte > 0) {
   switch(i) {
-    case F:
-      goForward();
-    break;
-    case S:
-       goForwardPlusStop();
-    break;
-    case L:
-      turnLeft();
-    break;
-    case R:
-      turnRight();
-    break;
-    case B:
-      beep();
-    break;
-   
+    
   }
- }
+   roboReady();
+ //}
 }
 
 //Stuff
@@ -145,7 +181,8 @@ void goForwardPlusStop(){
 
 
 void beep() {
-  OrangutanBuzzer::playFrequency(6000, 1000, 15); //6khz, 1s, max Lautstärke
+  OrangutanBuzzer::playFrequency(6000, 100, 15); //6khz, 1s, max Lautstärke
+  return;
 }
 
 void turnLeft(){
@@ -168,5 +205,21 @@ void turn(){
   return;
 }
 
+void ende(){
+  while(true);
+  return;
+}
 
+void roboReady(){
+  Serial.write("D\n");
+  beep();
+  return;
+}
+
+bool isBreakCondition(){
+  bool isBroken = false;
+  
+  
+  return isBroken;
+}
 
