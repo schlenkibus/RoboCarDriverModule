@@ -15,8 +15,9 @@ long integral = 0;
 
 
 //Tuning Section
-const int maximum = 60; //Maxspeed
-auto timeToTurn = 290; //Zeit die für eine 90 Grad drehung benötigt wird
+const int maximum = 70; //Maxspeed
+const int maximumTurn = 60; //Maxspeed
+auto timeToTurn = 350; //Zeit die für eine 90 Grad drehung benötigt wird
 //End of Tuning Section
 
 
@@ -26,7 +27,7 @@ auto timeToTurn = 290; //Zeit die für eine 90 Grad drehung benötigt wird
 #include <avr/pgmspace.h>
 
 void calibrateSensors() {
-  for (auto counter=0; counter<80; counter++)
+  for (auto counter=0; counter<83; counter++)
   {
     if (counter < 20 || counter >= 60)
       OrangutanMotors::setSpeeds(40, -40);
@@ -92,15 +93,18 @@ void loop()
     foo x;
     switch(instruction) {
       case 'F':
+      moveB();
       goForward();
       break;
     case 'S':
        goForwardPlusStop();
       break;
     case 'L':
+      moveB();
       turnLeft();
       break;
     case 'R':
+      moveB();
       turnRight();
       break;
     case 'B':
@@ -114,7 +118,7 @@ void loop()
       break;
     
     }
-  } while(instruction != 'E');
+  } while(true);
 
   exit(0);
   
@@ -128,7 +132,6 @@ void loop()
  //}
 }
 
-//Stuff
 void goForward() {
   while(!isBreakCondition()) {
   //
@@ -159,16 +162,21 @@ void goForward() {
 
   // Compute the actual motor settings.  We never set either motor
   // to a negative value.
-  if (power_difference > maximum)
+  if (power_difference > maximum){
     power_difference = maximum;
-  if (power_difference < -maximum)
-    power_difference = -maximum;
+  }
+  if (power_difference < -maximum){
+     power_difference = -maximum;
+  }
 
-  if (power_difference < 0)
+
+  if (power_difference < 0){
     OrangutanMotors::setSpeeds(maximum + power_difference, maximum);
-  else
+  }else{
     OrangutanMotors::setSpeeds(maximum, maximum - power_difference);
   }
+  }
+  OrangutanMotors::setSpeeds(0, 0); //Stoppen und auf neuen Befehl warten
 }
 
 void goForwardPlusStop(){
@@ -176,7 +184,7 @@ void goForwardPlusStop(){
   delay(500); //Drive a half second forward
   OrangutanMotors::setSpeeds(0, 0);  //Stop at Sign
   beep();
-  delay(10);//Zum Stillstand kommen
+  delay(50);//Zum Stillstand kommen
   goForward(); //Weiterfahren
 }
 
@@ -187,14 +195,14 @@ void beep() {
 }
 
 void turnLeft(){
-  OrangutanMotors::setSpeeds(-(maximum), maximum);
+  OrangutanMotors::setSpeeds(-(maximumTurn), maximumTurn);
   delay(timeToTurn);
   OrangutanMotors::setSpeeds(0, 0);
   return;   
 }
 
 void turnRight(){
-  OrangutanMotors::setSpeeds(maximum, -(maximum));
+  OrangutanMotors::setSpeeds(maximumTurn, -(maximumTurn));
   delay(timeToTurn);
   OrangutanMotors::setSpeeds(0, 0);
   return;  
@@ -207,6 +215,7 @@ void turn(){
 }
 
 void ende(){
+  beep();
   while(true);
   return;
 }
@@ -216,7 +225,6 @@ void roboReady(){
   for(int i = 0; i<=20; i++){
   Serial.print('D');
   }
-  beep();
 }
 
 bool isBreakCondition(){
@@ -224,23 +232,22 @@ bool isBreakCondition(){
  
   // if all three front sensors see very low reflectance, take some appropriate action for this 
   // situation.
-  if (sensors[1] < 250 && sensors[2] < 250 && sensors[3] < 250)
+  if (sensors[1] < 100 && sensors[2] < 100 && sensors[3] < 100)
   {
     return true;
   }
 
-  //Auf Linie und Rechts neue Linie
-  if (sensors[2] > 750 && sensors[4] > 750)
-  {
-    return true;
-  }
-
-    //Auf Linie und Links neue Linie
-    if (sensors[0] > 750 && sensors[2] > 750)
-  {
+    //Kreuzung
+    else if(sensors[0] > 150 || sensors[4] > 150)
+ {
     return true;
   } 
-  
   return false;
+}
+
+void moveB(){
+  OrangutanMotors::setSpeeds(50, 50);
+  delay(315);
+  OrangutanMotors::setSpeeds(0, 0);
 }
 
