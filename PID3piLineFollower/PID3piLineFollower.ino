@@ -54,7 +54,7 @@ void setup()
 
   //Sensor Init
   OrangutanLCD::clear();
-  OrangutanLCD::print("Press B for Calibration");
+  OrangutanLCD::print("Press B");
   beep();
   OrangutanPushbuttons::waitForPress(BUTTON_B);
   OrangutanPushbuttons::waitForRelease(BUTTON_B);
@@ -72,31 +72,28 @@ char readUart(){
   do {
     b = Serial.read();
   } while(b == -1);
-  
-  Serial.print(b);
   return static_cast<char>(b);
 }
 
-void debugInstruction(char i) {
-  switch(i) {
-    case 'F':
-      beep();
-      delay(100);
-      beep();
-    break;
+class foo   {
+  public:
+  foo() {
+    
   }
-}
+  ~foo() {
+    roboReady();
+  }
+};
 
 void loop()
 {
   char instruction;
   do {
     instruction = readUart();
-    debugInstruction(instruction);
+    foo x;
     switch(instruction) {
       case 'F':
       goForward();
-      roboReady();
       break;
     case 'S':
        goForwardPlusStop();
@@ -211,15 +208,35 @@ void ende(){
 }
 
 void roboReady(){
-  Serial.write("D\n");
+
+  for(int i = 0; i<=20; i++){
+  Serial.print('D');
+  }
   beep();
-  return;
 }
 
 bool isBreakCondition(){
-  bool isBroken = false;
+ int position = robot.readLine(sensors);
+ 
+  // if all three front sensors see very low reflectance, take some appropriate action for this 
+  // situation.
+  if (sensors[1] < 250 && sensors[2] < 250 && sensors[3] < 250)
+  {
+    return true;
+  }
+
+  //Auf Linie und Rechts neue Linie
+  if (sensors[2] > 750 && sensors[4] > 750)
+  {
+    return true;
+  }
+
+    //Auf Linie und Links neue Linie
+    if (sensors[0] > 750 && sensors[2] > 750)
+  {
+    return true;
+  } 
   
-  
-  return isBroken;
+  return false;
 }
 
