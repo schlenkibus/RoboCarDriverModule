@@ -16,7 +16,7 @@ bool isCalibrated = false;
 
 //Tuning Section
 const int maximum = 60; //Maxspeed
-auto timeToTurn = 500; //Zeit die für eine 90 Grad drehung benötigt wird
+auto timeToTurn = 400; //Zeit die für eine 90 Grad drehung benötigt wird
 //End of Tuning Section
 
 
@@ -37,7 +37,7 @@ void calibrateSensors() {
     // 80*20 = 1600 ms.
     delay(20);
   }
-
+  OrangutanMotors::setSpeeds(0, 0);
   isCalibrated = true;
 }
 
@@ -110,6 +110,10 @@ void loop()
     case 'E':
       ende();
       break;
+    case 'T':
+      turn();
+      break;
+    
     }
   } while(instruction != 'E');
 
@@ -127,7 +131,7 @@ void loop()
 
 //Stuff
 void goForward() {
-  
+  while(!isBreakCondition()) {
   //
   // Get the position of the line.  Note that we *must* provide
   // the "sensors" argument to read_line() here, even though we
@@ -165,6 +169,7 @@ void goForward() {
     OrangutanMotors::setSpeeds(maximum + power_difference, maximum);
   else
     OrangutanMotors::setSpeeds(maximum, maximum - power_difference);
+  }
 }
 
 void goForwardPlusStop(){
