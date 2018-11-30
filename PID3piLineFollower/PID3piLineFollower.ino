@@ -6,11 +6,20 @@
 #include <OrangutanLCD.h>
 #include <OrangutanPushbuttons.h>
 #include <OrangutanBuzzer.h>
+#include <OrangutanSerial.h>
 
 Pololu3pi robot;
 unsigned int sensors[5]; // an array to hold sensor values
 unsigned int last_proportional = 0;
 long integral = 0;
+
+
+//Tuning Section
+const int maximum = 60; //Maxspeed
+auto timeToTurn = 500; //Zeit die für eine 90 Grad drehung benötigt wird
+//End of Tuning Section
+
+
 // This include file allows data to be stored in program space.  The
 // ATmega168 has 16k of program space compared to 1k of RAM, so large
 // pieces of static data should be stored in program space.
@@ -32,39 +41,61 @@ void calibrateSensors() {
 
 void setup()
 {
+  
+  //Robo Init
   robot.init(2000);
- 
-  while (!OrangutanPushbuttons::isPressed(BUTTON_B))
-  {
-    delay(100);
-  }
-  OrangutanPushbuttons::waitForRelease(BUTTON_B);
   delay(10);
   OrangutanMotors::setSpeeds(0, 0);
+  //End of Robo Init
+
+  //UART Init
+  char buffer;
+  serial_set_baud_rate(115200);
+  serial_set_mode(SERIAL_CHECK); // Don't use ISRs and background buffers
+  serial_receive(&buffer, 1); // Configure ring buffer to use for receiving
+  //end of UART Init
+  
 }
 
 enum Instruktionen {
-  Forward, ForwardPlusStop, Left, Right, Turn, Beep
+  F, S, L, R, T, B
 };
+
+char readUart(){
+  serial_check(); // Check if the UART hardware has received data and place it in the receive buffer
+
+}
 
 void loop()
 {
   //Uart lesen und Instruktion ausführen
   auto i = readUart();
+  if (serial_get_received_bytes() > 0) {
   switch(i) {
-    case Forward:
+    case F:
       goForward();
     break;
-    case ForwardPlusStop:
-       forwardPlusStop();
+    case S:
+       goForwardPlusStop();
     break;
-    ETC...
+    case L:
+      turnLeft();
+    break;
+    case R:
+      turnRight();
+    break;
+    case B:
+      beep();
+    break;
+   
   }
+ }
 }
 
 //Stuff
 void goForward() {
-    //
+  
+  //
   // Get the position of the line.  Note that we *must* provide
   // the "sensors" argument to read_line() here, even though we
   // are not interested in the individual sensor readings.
@@ -92,7 +123,6 @@ void goForward() {
 
   // Compute the actual motor settings.  We never set either motor
   // to a negative value.
-  const int maximum = 60;
   if (power_difference > maximum)
     power_difference = maximum;
   if (power_difference < -maximum)
@@ -103,3 +133,40 @@ void goForward() {
   else
     OrangutanMotors::setSpeeds(maximum, maximum - power_difference);
 }
+
+void goForwardPlusStop(){
+  OrangutanMotors::setSpeeds(maximum, maximum);
+  delay(500); //Drive a half second forward
+  OrangutanMotors::setSpeeds(0, 0);  //Stop at Sign
+  beep();
+  delay(10);//Zum Stillstand kommen
+  goForward(); //Weiterfahren
+}
+
+
+void beep() {
+  OrangutanBuzzer::playFrequency(6000, 1000, 15); //6khz, 1s, max Lautstärke
+}
+
+void turnLeft(){
+  OrangutanMotors::setSpeeds(-(maximum), maximum);
+  delay(timeToTurn);
+  OrangutanMotors::setSpeeds(0, 0);
+  return;   
+}
+
+void turnRight(){
+  OrangutanMotors::setSpeeds(maximum, -(maximum));
+  delay(timeToTurn);
+  OrangutanMotors::setSpeeds(0, 0);
+  return;  
+}
+
+void turn(){
+  turnRight();
+  turnRight();
+  return;
+}
+
+
+
